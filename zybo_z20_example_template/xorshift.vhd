@@ -10,7 +10,7 @@ entity xorshift is
     );
 end entity xorshift;
 
-architecture RTL of logic_test is
+architecture RTL of xorshift is
 
   attribute mark_debug : string;
 
