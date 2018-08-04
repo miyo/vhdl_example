@@ -20,10 +20,21 @@ architecture RTL of top is
   
   attribute ASYNC_REG of sw_d0 : signal is "TRUE";
   attribute ASYNC_REG of sw_d1 : signal is "TRUE";
+
+  component logic_test
+    port (
+      CLK   : in  std_logic;
+      a, b  : in  std_logic;
+      q_and : out std_logic;
+      q_or  : out std_logic;
+      q_xor : out std_logic;
+      q_not : out std_logic;
+      );
+  end component logic_test;
   
 begin
 
-  LD <= sw_d1;
+  -- LD <= sw_d1;
   
   process(CLK)
   begin
@@ -32,6 +43,16 @@ begin
       sw_d1 <= sw_d0;
     end if;
   end process;
+
+  U : logic_test (
+    CLK   => CLK,
+    a     => sw_d1(0),
+    b     => sw_d1(1),
+    q_and => LD(0),
+    q_or  => LD(1),
+    q_xor => LD(2),
+    q_not => LD(3)
+    );
   
 end RTL;
   
