@@ -32,11 +32,11 @@ begin
   begin
     if rising_edge(CLK) then
       -- y ^= (y << 13);
-      y0 := y xor (y(63-13 downto 13) & "0000000000000");
+      y0 := y xor (y(63-13 downto 0) & "0000000000000");
       -- y ^= (y >> 17);
       y1 := y0 xor ("00000000000000000" & y0(63 downto 17));
       -- y ^= (y << 5);
-      y <= y1 xor (y1(63-5 downto 5) & "00000");
+      y <= y1 xor (y1(63-5 downto 0) & "00000");
       
       -- to debug
       y0_d <= y0;
