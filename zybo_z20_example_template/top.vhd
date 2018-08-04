@@ -28,7 +28,7 @@ architecture RTL of top is
       q_and : out std_logic;
       q_or  : out std_logic;
       q_xor : out std_logic;
-      q_not : out std_logic;
+      q_not : out std_logic
       );
   end component logic_test;
   
