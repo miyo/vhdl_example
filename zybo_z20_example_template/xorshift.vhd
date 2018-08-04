@@ -14,7 +14,7 @@ architecture RTL of xorshift is
 
   attribute mark_debug : string;
 
-  constant INIT_VALUE := unsigned := to_unsigned(2463534242, 64);
+  constant INIT_VALUE : unsigned := to_unsigned(2463534242, 64);
   signal y : std_logic_vector(63 downto 0) := std_logic_vector(INIT_VALUE);
   signal y0_d, y1_d : std_logic_vector(63 downto 0);
 
