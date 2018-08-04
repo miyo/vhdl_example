@@ -32,6 +32,13 @@ architecture RTL of top is
       );
   end component logic_test;
   
+  component xorshift
+    port (
+      CLK   : in  std_logic;
+      Q     : out std_logic_vector(31 downto 0)
+      );
+  end component xorshift;
+
 begin
 
   -- LD <= sw_d1;
@@ -44,15 +51,21 @@ begin
     end if;
   end process;
 
-  U : logic_test port map(
-    CLK   => CLK,
-    a     => sw_d1(0),
-    b     => sw_d1(1),
-    q_and => LD(0),
-    q_or  => LD(1),
-    q_xor => LD(2),
-    q_not => LD(3)
-    );
+  --U : logic_test port map(
+  --  CLK   => CLK,
+  --  a     => sw_d1(0),
+  --  b     => sw_d1(1),
+  --  q_and => LD(0),
+  --  q_or  => LD(1),
+  --  q_xor => LD(2),
+  --  q_not => LD(3)
+  --  );
   
+  U : xorshift
+    port map(
+      CLK => CLK,
+      Q   => LD(3 downto 0)
+      );
+
 end RTL;
   
