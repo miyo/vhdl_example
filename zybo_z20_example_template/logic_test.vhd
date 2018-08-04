@@ -18,9 +18,10 @@ architecture RTL of logic_test is
 
   attribute mark_debug : string;
 
-  q_and_i : std_logic;
-  q_or_i  : std_logic;
-  q_xor_i : std_logic
+  signal q_and_i : std_logic;
+  signal q_or_i  : std_logic;
+  signal q_xor_i : std_logic;
+  signal q_not_i : std_logic
 
   attribute mark_debug of q_and_i : signal is "true";
   attribute mark_debug of q_or_i  : signal is "true";
