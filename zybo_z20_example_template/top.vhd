@@ -44,7 +44,7 @@ begin
     end if;
   end process;
 
-  U : logic_test (
+  U : logic_test port map(
     CLK   => CLK,
     a     => sw_d1(0),
     b     => sw_d1(1),
