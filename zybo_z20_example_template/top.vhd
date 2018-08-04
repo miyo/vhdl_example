@@ -63,8 +63,9 @@ begin
   
   U : xorshift
     port map(
-      CLK => CLK,
-      Q   => LD(3 downto 0)
+      CLK            => CLK,
+      Q(3 downto 0)  => LD(3 downto 0),
+      Q(31 downto 4) => open
       );
 
 end RTL;
