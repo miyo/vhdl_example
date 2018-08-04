@@ -40,7 +40,7 @@ begin
     if rising_edge(CLK) then
       q_and_i <= a and b;
       q_or_i  <= a or b;
-      q_xor_i <= a and b;
+      q_xor_i <= a xor b;
       q_not_i <= not a;
     end if;
   end process;
