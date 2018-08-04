@@ -6,7 +6,7 @@ use ieee.numeric_std.all;
 entity xorshift is
   port (
     CLK   : in  std_logic;
-    Q     : out std_logic_vector
+    Q     : out std_logic_vector(31 downto 0)
     );
 end entity xorshift;
 
@@ -24,7 +24,7 @@ architecture RTL of logic_test is
   
 begin
 
-  Q <= y;
+  Q <= y(31 downto 0);
 
   process(CLK)
     variable y0 : std_logic_vector(63 downto 0);
