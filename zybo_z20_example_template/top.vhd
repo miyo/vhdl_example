@@ -39,6 +39,15 @@ architecture RTL of top is
       );
   end component xorshift;
 
+  component full_addr
+    Port ( a : in std_logic;
+           b : in std_logic;
+           ci : in std_logic;
+           s : out std_logic;
+           co : out std_logic
+           );
+  end component full_addr;
+
 begin
 
   -- LD <= sw_d1;
@@ -61,12 +70,21 @@ begin
   --  q_not => LD(3)
   --  );
   
-  U : xorshift
-    port map(
-      CLK            => CLK,
-      Q(3 downto 0)  => LD(3 downto 0),
-      Q(31 downto 4) => open
-      );
+  --U : xorshift
+  --  port map(
+  --    CLK            => CLK,
+  --    Q(3 downto 0)  => LD(3 downto 0),
+  --    Q(31 downto 4) => open
+  --    );
 
+  U: full_addr
+    port map( a => sw_d1(0),
+              b => sw_d1(1),
+              ci => sw_d1(2),
+              s => LD(0),
+              co => LD(1)
+              );
+  LD(3 downto 2) <= "00";
+  
 end RTL;
   
