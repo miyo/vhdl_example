@@ -6,22 +6,21 @@
 -- おまじない(ライブラリ呼び出し)
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
-use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
 
 entity uart_rx is
   -- 定数宣言
   generic(
-    sys_clk : integer := 14000000; --クロック周波数
-    rate : integer := 9600         --転送レート,単位はbps(ビット毎秒)
+    sys_clk : integer := 14000000;            --クロック周波数
+    rate    : integer := 9600                 --転送レート,単位はbps(ビット毎秒)
     );
   -- 入出力ポート宣言
   port(
-    clk  : in  std_logic; -- クロック
-    reset  : in  std_logic; -- リセット
-    din  : in  std_logic; -- シリアル入力
-    rd   : out std_logic; -- 受信完了を示す
-    dout : out std_logic_vector( 7 downto 0 ) -- 受信データ
+    clk   : in  std_logic;                    -- クロック
+    reset : in  std_logic;                    -- リセット
+    din   : in  std_logic;                    -- シリアル入力
+    rd    : out std_logic;                    -- 受信完了を示す
+    dout  : out std_logic_vector(7 downto 0)  -- 受信データ
     );
 end uart_rx;
 
@@ -36,17 +35,17 @@ architecture rtl of uart_rx is
       );
   end component;
   --内部変数宣言
-  signal buf : std_logic_vector( 7 downto 0 );  --受信データ系列の一時保存用レジスタ
-  signal start    : std_logic;                  --受信しているかどうか
-  signal cbit     : integer range 0 to 150;     --カウンタ,データを取り込むタイミングを決定するのに使用
-  signal rx_en  : std_logic;                    --受信用クロック
-  signal rx_div : std_logic_vector(15 downto 0);--クロック分周の倍率
+  signal buf    : std_logic_vector(7 downto 0);   --受信データ系列の一時保存用レジスタ
+  signal start  : std_logic;                      --受信しているかどうか
+  signal cbit   : integer range 0 to 150;         --カウンタ,データを取り込むタイミングを決定するのに使用
+  signal rx_en  : std_logic;                      --受信用クロック
+  signal rx_div : std_logic_vector(15 downto 0);  --クロック分周の倍率
 
 begin
   --クロック分周モジュールのインスタンス生成
   --受信側は送信側の16倍の速度で値を取り込み処理を行う
-  rx_div <= conv_std_logic_vector(((sys_clk / rate) / 16) - 1, 16);
-  U0: clk_div port map (clk, reset, rx_div, rx_en);
+  rx_div <= std_logic_vector(to_unsigned(((sys_clk / rate) / 16) - 1, 16));
+  U0 : clk_div port map (clk => clk, rst => reset, div => rx_div, clk_out => rx_en);
 
   process(reset, rx_en) --変化を監視する信号を記述,この場合受信用クロックとリセットを監視
   begin
