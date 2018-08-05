@@ -6,6 +6,7 @@ entity pwm is
   port (
     clk : in  std_logic;
     a   : in  std_logic_vector(3 downto 0);
+    d   : in  std_logic;
     q   : out std_logic
   );
 end pwm;
@@ -29,7 +30,7 @@ begin
     if rising_edge(clk) then
       counter <= counter + 1;
       if counter >= unsigned(a) and unsigned(a) < 15 then
-        q_i <= '1';
+        q_i <= d;
       else
         q_i <= '0';
       end if;

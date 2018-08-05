@@ -7,7 +7,13 @@ entity top is
   port (
     CLK : in  std_logic;
     SW  : in  std_logic_vector(3 downto 0);
-    LD  : out std_logic_vector(3 downto 0)
+    LD  : out std_logic_vector(3 downto 0);
+
+    led6_r : out std_logic;
+    led6_g : out std_logic;
+    led6_b : out std_logic;
+    
+    btn : in std_logic_vector(3 downto 0)
     );
 end entity top;
 
@@ -18,8 +24,11 @@ architecture RTL of top is
   signal sw_d0 : std_logic_vector(3 downto 0);
   signal sw_d1 : std_logic_vector(3 downto 0);
   
-  attribute ASYNC_REG of sw_d0 : signal is "TRUE";
-  attribute ASYNC_REG of sw_d1 : signal is "TRUE";
+  signal btn_d0 : std_logic_vector(3 downto 0);
+  signal btn_d1 : std_logic_vector(3 downto 0);
+  
+  attribute ASYNC_REG of sw_d0, sw_d1 : signal is "TRUE";
+  attribute ASYNC_REG of btn_d0, btn_d1 : signal is "TRUE";
 
   component logic_test
     port (
@@ -76,6 +85,7 @@ architecture RTL of top is
     port (
       clk : in  std_logic;
       a   : in  std_logic_vector(3 downto 0);
+      d   : in  std_logic;
       q   : out std_logic
       );
   end component pwm;
@@ -87,6 +97,7 @@ architecture RTL of top is
            led : out std_logic_vector(2 downto 0)
            );
   end component stmt_test;
+  signal led_rgb : std_logic_vector(2 downto 0);
   
 begin
 
@@ -97,6 +108,8 @@ begin
     if rising_edge(CLK) then
       sw_d0 <= SW;
       sw_d1 <= sw_d0;
+      btn_d0 <= btn;
+      btn_d1 <= btn_d0;
     end if;
   end process;
 
@@ -150,6 +163,7 @@ begin
   --  port map(
   --    clk => clk,
   --    a   => sw_d1,
+  --    d   => '1',
   --    q   => pwm_q
   --    );
   --LD(0) <= pwm_q;
@@ -157,13 +171,34 @@ begin
   --LD(2) <= pwm_q;
   --LD(3) <= pwm_q;
 
-  U: stmt_test
+  U : stmt_test
     port map(
       clk => clk,
-      a => sw_d1(0),
-      b => sw_d1(1),
-      led => LD(2 downto 0)
+      a   => btn_d1(0),
+      b   => btn_d1(1),
+      led => led_rgb
       );
+
+  U_PWM_R : pwm port map(
+    clk => clk,
+    a => "1000",
+    d => led_rgb(0),
+    q => led6_r
+    );
+  
+  U_PWM_G : pwm port map(
+    clk => clk,
+    a => "1000",
+    d => led_rgb(1),
+    q => led6_g
+    );
+  
+  U_PWM_B : pwm port map(
+    clk => clk,
+    a => "1000",
+    d => led_rgb(2),
+    q => led6_b
+    );
 
 end RTL;
   
