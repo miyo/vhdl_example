@@ -72,6 +72,15 @@ architecture RTL of top is
   signal bitcount_a : std_logic_vector(31 downto 0) := (others => '0');
   signal bitcount_q : std_logic_vector(4 downto 0);
 
+  component pwm
+    port (
+      clk : in  std_logic;
+      a   : in  std_logic_vector(3 downto 0);
+      q   : out std_logic
+      );
+  end component pwm;
+  signal pwm_q : std_logic;
+
 begin
 
   -- LD <= sw_d1;
@@ -122,13 +131,24 @@ begin
   --b <= sw_d1(3 downto 2);
   --LD <= q_a_mult_b(3 downto 0);
 
-  U: bitcount
+  --U: bitcount
+  --  port map(
+  --    a => bitcount_a,
+  --    q => bitcount_q
+  --    );
+  --bitcount_a(3 downto 0) <= sw_d1(3 downto 0);
+  --LD <= bitcount_q(3 downto 0);
+
+  U: pwm
     port map(
-      a => bitcount_a,
-      q => bitcount_q
+      clk => clk,
+      a   => sw_d1,
+      q   => pwm_q
       );
-  bitcount_a(3 downto 0) <= sw_d1(3 downto 0);
-  LD <= bitcount_q(3 downto 0);
+  LD(0) <= pwm_q;
+  LD(1) <= pwm_q;
+  LD(2) <= pwm_q;
+  LD(3) <= pwm_q;
 
 end RTL;
   
