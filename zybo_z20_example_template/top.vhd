@@ -81,6 +81,13 @@ architecture RTL of top is
   end component pwm;
   signal pwm_q : std_logic;
 
+  component stmt_test
+    port ( clk : in std_logic;
+           a,b : in std_logic;
+           led : out std_logic_vector(2 downto 0)
+           );
+  end component stmt_test;
+  
 begin
 
   -- LD <= sw_d1;
@@ -139,16 +146,24 @@ begin
   --bitcount_a(3 downto 0) <= sw_d1(3 downto 0);
   --LD <= bitcount_q(3 downto 0);
 
-  U: pwm
+  --U: pwm
+  --  port map(
+  --    clk => clk,
+  --    a   => sw_d1,
+  --    q   => pwm_q
+  --    );
+  --LD(0) <= pwm_q;
+  --LD(1) <= pwm_q;
+  --LD(2) <= pwm_q;
+  --LD(3) <= pwm_q;
+
+  U: stmt_test
     port map(
       clk => clk,
-      a   => sw_d1,
-      q   => pwm_q
+      a => sw_d1(0),
+      b => sw_d1(1),
+      led => LD(2 downto 0)
       );
-  LD(0) <= pwm_q;
-  LD(1) <= pwm_q;
-  LD(2) <= pwm_q;
-  LD(3) <= pwm_q;
 
 end RTL;
   
