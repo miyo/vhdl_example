@@ -48,6 +48,21 @@ architecture RTL of top is
            );
   end component full_addr;
 
+  component arith_test
+    port (
+      a          : in  std_logic_vector(1 downto 0);
+      b          : in  std_logic_vector(1 downto 0);
+      q_a_add_b  : out std_logic_vector(2 downto 0);
+      q_a_sub_b  : out std_logic_vector(2 downto 0);
+      q_a_mult_b : out std_logic_vector(3 downto 0)
+      );
+  end component arith_test;
+  signal a : std_logic_vector(1 downto 0) := (others => '0');
+  signal b : std_logic_vector(1 downto 0) := (others => '0');
+  signal q_a_add_b  : std_logic_vector(2 downto 0);
+  signal q_a_sub_b  : std_logic_vector(2 downto 0);
+  signal q_a_mult_b : std_logic_vector(3 downto 0);
+
 begin
 
   -- LD <= sw_d1;
@@ -77,14 +92,26 @@ begin
   --    Q(31 downto 4) => open
   --    );
 
-  U: full_addr
-    port map( a => sw_d1(0),
-              b => sw_d1(1),
-              ci => sw_d1(2),
-              s => LD(0),
-              co => LD(1)
-              );
-  LD(3 downto 2) <= "00";
+  --U: full_addr
+  --  port map( a => sw_d1(0),
+  --            b => sw_d1(1),
+  --            ci => sw_d1(2),
+  --            s => LD(0),
+  --            co => LD(1)
+  --            );
+  --LD(3 downto 2) <= "00";
   
+  U : arith_test
+    port map(
+      a => a,
+      b => b,
+      q_a_add_b => q_a_add_b,
+      q_a_sub_b => q_a_sub_b,
+      q_a_mult_b => q_a_mult_b
+      );
+  a <= sw_d1(1 downto 0);
+  b <= sw_d1(3 downto 2);
+  LD <= q_a_mult_b(3 downto 0);
+
 end RTL;
   
