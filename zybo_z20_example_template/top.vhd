@@ -113,15 +113,15 @@ begin
     end if;
   end process;
 
-  --U : logic_test port map(
-  --  CLK   => CLK,
-  --  a     => sw_d1(0),
-  --  b     => sw_d1(1),
-  --  q_and => LD(0),
-  --  q_or  => LD(1),
-  --  q_xor => LD(2),
-  --  q_not => LD(3)
-  --  );
+  U : logic_test port map(
+   CLK   => CLK,
+   a     => sw_d1(0),
+   b     => sw_d1(1),
+   q_and => LD(0),
+   q_or  => LD(1),
+   q_xor => LD(2),
+   q_not => LD(3)
+   );
   
   --U : xorshift
   --  port map(
@@ -171,7 +171,7 @@ begin
   --LD(2) <= pwm_q;
   --LD(3) <= pwm_q;
 
-  U : stmt_test
+  U1 : stmt_test
     port map(
       clk => clk,
       a   => btn_d1(0),
