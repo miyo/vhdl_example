@@ -76,22 +76,26 @@ architecture RTL of z7_audio_test is
   signal state_counter : unsigned(7 downto 0) := (others => '0');
   signal delay_counter : unsigned(31 downto 0) := (others => '0');
 
-  signal sw_d, sw_dd : std_logic := '0';
   signal config_done : std_logic := '0';
   attribute mark_debug of config_done : signal is "true";
   
-  constant SSM2603_CONFIG_LEN : integer := 7;
+  constant SSM2603_CONFIG_LEN : integer := 9;
   signal ssm2603_config	: std_logic_vector(SSM2603_CONFIG_LEN*16-1 downto 0) :=
       X"0C10" -- 0x06 0x10 power on(except of the D4)
+    & X"0017" -- 0x00 0x17 select dac
+    & X"0217" -- 0x01 0x17 select dac
     & X"0810" -- 0x04 0x10 select dac
     & X"0a00" -- 0x05 0x00 dac no mute, no de-emphasis
-    & X"070a" -- 0x07 0x0a slave mode 24-bit, I2S
+    & X"0e0a" -- 0x07 0x0a slave mode 24-bit, I2S
     & X"1000" -- 0x08 0x00 MCLK=12.288MHz, BCLK=MCLK/4, RECLRC/PBLRC=48kHz=MCLK/256
     & X"1201" -- 0x09 0x01 active degital core
-    & X"0C10" -- 0x06 0x00 power on
+    & X"0C00" -- 0x06 0x00 power on
     ;
   signal ssm2603_config_cnt : unsigned(7 downto 0) := (others => '0');
-  
+
+  signal clk_locked : std_logic := '0';
+  signal config_wait : unsigned(7 downto 0) := (others => '0');
+
 begin
 
   U_CLK: clk_wiz_0
@@ -99,7 +103,7 @@ begin
       clk_out1 => clk125mhz,
       clk_out2 => clk12288khz,
       reset    => '0',
-      locked   => open,
+      locked   => clk_locked,
       clk_in1  => CLK
       );
 
@@ -145,16 +149,18 @@ begin
       addr   => "0011010",
       busy   => i2c_busy
       );
-  
+
   process(clk)
   begin
     if rising_edge(clk) then
-      sw_d  <= SW(0);
-      sw_dd <= sw_d;
       case to_integer(state_counter) is
         when 0 =>
-          if sw_dd = '0' and sw_d = '1' then
-            state_counter <= state_counter + 1;
+          if clk_locked = '1' then
+            if config_wait > 200 then
+              state_counter <= state_counter + 1;
+            else
+              config_wait <= config_wait + 1;
+            end if;
           end if;
           i2c_din_wr         <= '0';
           delay_counter      <= (others => '0');
@@ -173,12 +179,14 @@ begin
           i2c_din_wr <= '0';
           if i2c_busy = '0' then
             if ssm2603_config_cnt = 0 then
-              state_counter <= (others => '0');
+              state_counter <= state_counter + 1;
               config_done   <= '1';
             else
               state_counter <= state_counter - 1;
             end if;
           end if;
+        when 3 =>
+          null;
         when others =>
           state_counter <= (others => '0');
       end case;
