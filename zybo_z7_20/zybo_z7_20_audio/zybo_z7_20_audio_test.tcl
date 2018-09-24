@@ -3,6 +3,8 @@ set project_name   "zybo_z7_20_audio_test"
 set project_target "xc7z020clg400-1"
 set source_files { \
                    ../../drivers/i2c_ctrl/i2c_ctrl.vhd \
+                   ../../drivers/i2s/i2s_decoder.vhd \
+                   ../../drivers/i2s/i2s_encoder.vhd \
                    ./zybo_z7_20_audio_test.vhd \
                    ./clk_wiz_0.xci \
 		  }

@@ -46,6 +46,38 @@ architecture RTL of z7_audio_test is
       busy   : out std_logic
       );
   end component i2c_ctrl;
+  
+  component i2s_decoder
+    generic (
+      WIDTH : integer := 24
+      );
+    port (
+      BCLK : in std_logic;
+    
+      LRC : in std_logic;
+      DAT : in std_logic;
+      
+      LOUT : out std_logic_vector(WIDTH-1 downto 0);
+      ROUT : out std_logic_vector(WIDTH-1 downto 0);
+      LOUT_VALID : out std_logic;
+      ROUT_VALID : out std_logic
+      );
+  end component i2s_decoder;
+
+  component i2s_encoder
+    generic (
+      WIDTH : integer := 24
+      );
+    port (
+      BCLKx2 : in std_logic;
+    
+      LRC : in std_logic;
+      DAT : out std_logic;
+      
+      LIN : in std_logic_vector(WIDTH-1 downto 0);
+      RIN : in std_logic_vector(WIDTH-1 downto 0)
+      );
+  end component i2s_encoder;
 
   signal recdat_d : std_logic;
   attribute mark_debug of recdat_d : signal is "true";
@@ -53,6 +85,7 @@ architecture RTL of z7_audio_test is
   signal clk125mhz   : std_logic;
   signal clk12288khz : std_logic;
   signal clk3072khz  : std_logic; -- (/ 12288 4)
+  signal clk6144khz  : std_logic; -- (/ 12288 2)
   signal clk48khz    : std_logic; -- (/ 12288 256)
 
   signal reset : std_logic := '0';
@@ -74,7 +107,6 @@ architecture RTL of z7_audio_test is
   end component clk_wiz_0;
 
   signal state_counter : unsigned(7 downto 0) := (others => '0');
-  signal delay_counter : unsigned(31 downto 0) := (others => '0');
 
   signal config_done : std_logic := '0';
   attribute mark_debug of config_done : signal is "true";
@@ -96,6 +128,34 @@ architecture RTL of z7_audio_test is
   signal clk_locked : std_logic := '0';
   signal config_wait : unsigned(7 downto 0) := (others => '0');
 
+  signal lrc_d : std_logic := '0';
+
+  signal left_data  : std_logic_vector(23 downto 0) := (others => '0');
+  signal right_data : std_logic_vector(23 downto 0) := (others => '0');
+  
+  signal left_valid  : std_logic := '0';
+  signal right_valid : std_logic := '0';
+  
+  attribute mark_debug of left_data   : signal is "true";
+  attribute mark_debug of left_valid  : signal is "true";
+  attribute mark_debug of right_data  : signal is "true";
+  attribute mark_debug of right_valid : signal is "true";
+  
+  attribute mark_debug of clk48khz   : signal is "true";
+  attribute mark_debug of clk3072khz : signal is "true";
+  attribute mark_debug of clk6144khz : signal is "true";
+
+  signal left_data_reg  : std_logic_vector(23 downto 0);
+  signal right_data_reg : std_logic_vector(23 downto 0);
+  
+  signal left_valid_d  : std_logic := '0';
+  signal right_valid_d : std_logic := '0';
+
+  signal enc_dout : std_logic := '0';
+
+  signal lrc : std_logic := '0';
+  signal bclkx2 : std_logic := '0';
+
 begin
 
   U_CLK: clk_wiz_0
@@ -114,15 +174,19 @@ begin
     end if;
   end process;
 
+  clk6144khz <= clk_counter(0); -- 1:1/2
   clk3072khz <= clk_counter(1); -- 1:1/4
   clk48khz <= clk_counter(7); -- 7:1/256
 
+  lrc    <= not clk48khz;
+  bclkx2 <= clk6144khz;
+  
   MCLK   <= clk12288khz;
   BCLK   <= clk3072khz;
-  PBLRC  <= clk48khz;
-  RECLRC <= clk48khz;
+  PBLRC  <= lrc;
+  RECLRC <= lrc;
 
-  PBDAT <= RECDAT;
+  PBDAT <= RECDAT when SW(0) = '0' else enc_dout;
 
   process(clk125mhz)
   begin
@@ -132,6 +196,51 @@ begin
   end process;
 
   MUTE <= '1';
+  
+  U_I2S_DEC : i2s_decoder
+    generic map(
+      WIDTH => 24
+      )
+    port map(
+      BCLK => clk3072khz,
+    
+      LRC => lrc,
+      DAT => RECDAT,
+
+      LOUT => left_data,
+      ROUT => right_data,
+      LOUT_VALID => left_valid,
+      ROUT_VALID => right_valid
+      );
+
+  U_I2S_ENC : i2s_encoder
+    generic map(
+      WIDTH => 24
+      )
+    port map(
+      BCLKx2 => bclkx2,
+    
+      LRC => lrc,
+      DAT => enc_dout,
+      
+      LIN => left_data_reg,
+      RIN => right_data_reg
+      );
+
+  process(clk12288khz)
+  begin
+    if rising_edge(clk12288khz) then
+      left_valid_d <= left_valid;
+      right_valid_d <= right_valid;
+      if left_valid_d = '0' and left_valid = '1' then
+        left_data_reg  <= left_data;
+      end if;
+      if right_valid_d = '0' and right_valid = '1' then
+        right_data_reg <= right_data;
+      end if;
+    end if;
+  end process;
+
 
   U: i2c_ctrl
     generic map(
@@ -150,9 +259,9 @@ begin
       busy   => i2c_busy
       );
 
-  process(clk)
+  process(clk125mhz)
   begin
-    if rising_edge(clk) then
+    if rising_edge(clk125mhz) then
       case to_integer(state_counter) is
         when 0 =>
           if clk_locked = '1' then
@@ -163,7 +272,6 @@ begin
             end if;
           end if;
           i2c_din_wr         <= '0';
-          delay_counter      <= (others => '0');
           ssm2603_config_cnt <= to_unsigned(SSM2603_CONFIG_LEN, ssm2603_config_cnt'length);
         when 1 =>
           if i2c_busy = '0' then
