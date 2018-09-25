@@ -8,14 +8,14 @@ set source_files { \
                    ./zybo_z7_20_audio_test.vhd \
                    ./config_ssm2603.vhd \
                    ./if_ssm2603.vhd \
-                   ./ip/clk_wiz_0.xci \
-                   ./ip/fifo_generator_0.xci \
                  }
 set constraint_files {./zybo_z7_20_audio_test.xdc}
 
 create_project -force $project_name $project_dir -part $project_target
 add_files -norecurse $source_files
 add_files -fileset constrs_1 -norecurse $constraint_files
+import_ip -files ./ip/clk_wiz_0.xci
+import_ip -files ./ip/fifo_generator_0.xci
 update_compile_order -fileset sources_1
 
 reset_project
