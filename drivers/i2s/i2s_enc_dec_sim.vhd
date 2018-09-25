@@ -13,7 +13,8 @@ architecture RTL of i2s_enc_dec_sim is
       WIDTH : integer := 24
       );
     port (
-      BCLKx2 : in std_logic;
+      CLK : in std_logic;
+      BCLK : in std_logic;
     
       LRC : in std_logic;
       DAT : out std_logic;
@@ -85,7 +86,9 @@ begin
       WIDTH => 24
       )
     port map(
-      BCLKx2 => bclkx2,
+      CLK => clk,
+      
+      BCLK => bclk,
       
       LRC => lrc,
       DAT => dat,

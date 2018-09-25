@@ -13,10 +13,11 @@ architecture RTL of i2s_encoder_sim is
       WIDTH : integer := 24
       );
     port (
-      BCLKx2 : in std_logic;
-    
-      LRC : in std_logic;
-      DAT : out std_logic;
+      CLK : in std_logic;
+
+      BCLK : in  std_logic;
+      LRC  : in  std_logic;
+      DAT  : out std_logic;
 
       LIN : in std_logic_vector(WIDTH-1 downto 0);
       RIN : in std_logic_vector(WIDTH-1 downto 0)
@@ -27,7 +28,6 @@ architecture RTL of i2s_encoder_sim is
   signal clk_counter : unsigned(31 downto 0) := (others => '0');
 
   signal bclk   : std_logic;
-  signal bclkx2 : std_logic;
   signal lrc    : std_logic;
   signal dat    : std_logic;
   
@@ -49,7 +49,6 @@ begin
     end if;
   end process;
   
-  bclkx2 <= std_logic(clk_counter(0));
   bclk   <= std_logic(clk_counter(1));
   lrc    <= not std_logic(clk_counter(7));
 
@@ -58,10 +57,11 @@ begin
       WIDTH => 24
       )
     port map(
-      BCLKx2 => bclkx2,
-      
-      LRC => lrc,
-      DAT => dat,
+      CLK => clk,
+
+      BCLK => bclk,
+      LRC  => lrc,
+      DAT  => dat,
 
       Lin => lin,
       Rin => rin
