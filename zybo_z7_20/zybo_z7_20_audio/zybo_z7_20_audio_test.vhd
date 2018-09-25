@@ -52,13 +52,14 @@ architecture RTL of z7_audio_test is
       WIDTH : integer := 24
       );
     port (
+      CLK : in std_logic;
+
       BCLK : in std_logic;
-    
-      LRC : in std_logic;
-      DAT : in std_logic;
-      
-      LOUT : out std_logic_vector(WIDTH-1 downto 0);
-      ROUT : out std_logic_vector(WIDTH-1 downto 0);
+      LRC  : in std_logic;
+      DAT  : in std_logic;
+
+      LOUT       : out std_logic_vector(WIDTH-1 downto 0);
+      ROUT       : out std_logic_vector(WIDTH-1 downto 0);
       LOUT_VALID : out std_logic;
       ROUT_VALID : out std_logic
       );
@@ -69,11 +70,12 @@ architecture RTL of z7_audio_test is
       WIDTH : integer := 24
       );
     port (
-      BCLKx2 : in std_logic;
-    
-      LRC : in std_logic;
-      DAT : out std_logic;
-      
+      CLK : in std_logic;
+
+      BCLK : in  std_logic;
+      LRC  : in  std_logic;
+      DAT  : out std_logic;
+
       LIN : in std_logic_vector(WIDTH-1 downto 0);
       RIN : in std_logic_vector(WIDTH-1 downto 0)
       );
@@ -154,7 +156,6 @@ architecture RTL of z7_audio_test is
   signal enc_dout : std_logic := '0';
 
   signal lrc : std_logic := '0';
-  signal bclkx2 : std_logic := '0';
 
 begin
 
@@ -179,7 +180,6 @@ begin
   clk48khz <= clk_counter(7); -- 7:1/256
 
   lrc    <= not clk48khz;
-  bclkx2 <= clk6144khz;
   
   MCLK   <= clk12288khz;
   BCLK   <= clk3072khz;
@@ -202,10 +202,11 @@ begin
       WIDTH => 24
       )
     port map(
+      CLK => clk12288khz,
+      
       BCLK => clk3072khz,
-    
-      LRC => lrc,
-      DAT => RECDAT,
+      LRC  => lrc,
+      DAT  => RECDAT,
 
       LOUT => left_data,
       ROUT => right_data,
@@ -218,10 +219,11 @@ begin
       WIDTH => 24
       )
     port map(
-      BCLKx2 => bclkx2,
-    
-      LRC => lrc,
-      DAT => enc_dout,
+      CLK => clk12288khz,
+
+      BCLK => clk3072khz,
+      LRC  => lrc,
+      DAT  => enc_dout,
       
       LIN => left_data_reg,
       RIN => right_data_reg
