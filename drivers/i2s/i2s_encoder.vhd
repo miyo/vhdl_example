@@ -54,9 +54,11 @@ begin
         if left_cnt <= 4*WIDTH-1 then
           left_cnt  <= left_cnt + 1;
           if 3 <= left_cnt then
-            DAT        <= left_data(0);
+--            DAT        <= left_data(0);
+            DAT        <= left_data(WIDTH-1);
             if left_cnt(1 downto 0) = "10" then
-              left_data <= '0' & left_data(WIDTH-1 downto 1);
+--              left_data <= '0' & left_data(WIDTH-1 downto 1);
+              left_data <= left_data(WIDTH-2 downto 0) & '0';
             end if;
           end if;
         end if;
@@ -69,9 +71,11 @@ begin
         if right_cnt <= 4*WIDTH-1 then
           right_cnt  <= right_cnt + 1;
           if 3 <= right_cnt then
-            DAT        <= right_data(0);
+--            DAT        <= right_data(0);
+            DAT        <= right_data(WIDTH-1);
             if right_cnt(1 downto 0) = "10" then
-              right_data <= '0' & right_data(WIDTH-1 downto 1);
+--              right_data <= '0' & right_data(WIDTH-1 downto 1);
+              right_data <= right_data(WIDTH-2 downto 0) & '0';
             end if;
           end if;
         end if;

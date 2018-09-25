@@ -60,8 +60,10 @@ begin
 
       if bclk_d = '0' and BCLK = '1' then
         
-        left_data  <= DAT & left_data(WIDTH-1 downto 1);
-        right_data <= DAT & right_data(WIDTH-1 downto 1);
+--        left_data  <= DAT & left_data(WIDTH-1 downto 1);
+--        right_data <= DAT & right_data(WIDTH-1 downto 1);
+        left_data  <= left_data(WIDTH-2 downto 0) & DAT;
+        right_data <= right_data(WIDTH-2 downto 0) & DAT;
 
         lrc_d <= LRC;
         
