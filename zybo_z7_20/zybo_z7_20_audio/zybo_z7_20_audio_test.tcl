@@ -16,6 +16,7 @@ add_files -norecurse $source_files
 add_files -fileset constrs_1 -norecurse $constraint_files
 import_ip -files ./ip/clk_wiz_0.xci
 import_ip -files ./ip/fifo_generator_0.xci
+import_ip -files ./ip/div_gen_0.xci
 update_compile_order -fileset sources_1
 
 reset_project
