@@ -6,7 +6,9 @@ set source_files { \
                    ../../drivers/i2s/i2s_decoder.vhd \
                    ../../drivers/i2s/i2s_encoder.vhd \
                    ./zybo_z7_20_audio_test.vhd \
-                   ./clk_wiz_0.xci \
+                   ./config_ssm2603.vhd \
+                   ./if_ssm2603.vhd \
+                   ./ip/clk_wiz_0.xci \
 		  }
 set constraint_files {./zybo_z7_20_audio_test.xdc}
 
