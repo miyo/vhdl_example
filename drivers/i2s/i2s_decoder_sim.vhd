@@ -13,10 +13,11 @@ architecture RTL of i2s_decoder_sim is
       WIDTH : integer := 24
       );
     port (
-      BCLK : in std_logic;
+      CLK : in std_logic;
       
-      LRC : in std_logic;
-      DAT : in std_logic;
+      BCLK : in std_logic;
+      LRC  : in std_logic;
+      DAT  : in std_logic;
 
       LOUT : out std_logic_vector(WIDTH-1 downto 0);
       ROUT : out std_logic_vector(WIDTH-1 downto 0);
@@ -80,8 +81,9 @@ begin
       WIDTH => 24
       )
     port map(
-      BCLK => bclk,
+      CLK => clk,
       
+      BCLK => bclk,
       LRC => lrc,
       DAT => dat,
 
