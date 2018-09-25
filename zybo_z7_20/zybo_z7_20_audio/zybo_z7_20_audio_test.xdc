@@ -2,8 +2,8 @@
 set_property -dict {PACKAGE_PIN K17 IOSTANDARD LVCMOS33} [get_ports CLK]
 create_clock -period 8.000 -name sys_clk_pin -waveform {0.000 4.000} -add [get_ports CLK]
 
-create_clock -period 8.000 -name main_clk -waveform {0.000 4.0000} -add [get_pins U_CLK/clk_out1]
-create_clock -period 81.30 -name ssm_mclk -waveform {0.000 40.60} -add [get_pins U_CLK/clk_out2]
+create_clock -period 8.000 -name main_clk -waveform {0.000 4.000} -add [get_pins U_CLK/clk_out1]
+create_clock -period 81.300 -name ssm_mclk -waveform {0.000 40.600} -add [get_pins U_CLK/clk_out2]
 
 set_property -dict {PACKAGE_PIN K18 IOSTANDARD LVCMOS33} [get_ports {BTN[0]}]
 set_property -dict {PACKAGE_PIN P16 IOSTANDARD LVCMOS33} [get_ports {BTN[1]}]
