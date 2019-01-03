@@ -54,13 +54,14 @@ architecture RTL of uart_z7_20 is
 
   signal tx_btn, tx_btn_d : std_logic := '0';
   signal tx_kick : std_logic := '0';
+  signal tx_din  : std_logic_vector(7 downto 0);
 
-  signal uart_tx_out : std_logic;
-  signal uart_rx_in : std_logic;
-  
-  signal uart_tx_ready : std_logic;
-  signal uart_rx_valid : std_logic;
-  signal uart_rx_dout  : std_logic_vector(7 downto 0);
+  signal uart_tx_out     : std_logic;
+  signal uart_rx_in      : std_logic;
+  signal uart_tx_ready   : std_logic;
+  signal uart_rx_valid   : std_logic;
+  signal uart_rx_valid_d : std_logic;
+  signal uart_rx_dout    : std_logic_vector(7 downto 0);
 
   attribute mark_debug of uart_rx_dout  : signal is "true";
   attribute mark_debug of uart_rx_valid : signal is "true";
@@ -84,11 +85,20 @@ begin
   process(CLK)
   begin
     if rising_edge(CLK) then
-      tx_btn   <= btn_d1(1);
-      tx_btn_d <= tx_btn;
+      tx_btn          <= btn_d1(1);
+      tx_btn_d        <= tx_btn;
+      uart_rx_valid_d <= uart_rx_valid;
+      if tx_btn = '1' and tx_btn_d = '0' and uart_tx_ready = '1' then
+        tx_kick <= '1';
+        tx_din  <= X"3E";
+      elsif uart_rx_valid = '1' and uart_rx_valid_d = '0' and uart_tx_ready = '1' then
+        tx_kick <= '1';
+        tx_din  <= uart_rx_dout;
+      else
+        tx_kick <= '0';
+      end if;
     end if;
   end process;
-  tx_kick <= '1' when tx_btn = '1' and tx_btn_d = '0' else '0';
       
   U_TX : uart_tx
     generic map(
@@ -99,7 +109,7 @@ begin
       clk   => CLK,
       reset => btn_d1(0),
       wr    => tx_kick,
-      din   => X"3E",
+      din   => tx_din,
       dout  => uart_tx_out,
       ready => uart_tx_ready
       );  
