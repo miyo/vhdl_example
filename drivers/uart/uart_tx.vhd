@@ -36,12 +36,14 @@ architecture rtl of uart_tx is
   -- 内部変数定義
   signal in_din : std_logic_vector(7 downto 0);  -- 送信データ一時保存用レジスタ
   signal buf    : std_logic_vector(7 downto 0);  -- 一時的にしようするバッファ
-  signal load   : std_logic;                     -- 送信データを読み込んだかどうか
-  signal cbit   : unsigned(2 downto 0);  -- 何ビット目を送信しているか
+  signal load   : std_logic := '0';              -- 送信データを読み込んだかどうか
+  signal cbit   : unsigned(2 downto 0) := (others => '0');  -- 何ビット目を送信しているか
 
-  signal run : std_logic;               -- 送信状態にあるかどうか
+  signal run : std_logic := '0';               -- 送信状態にあるかどうか
 
-  signal tx_en  : std_logic; -- 送信用クロック
+  signal tx_en   : std_logic; -- 送信用クロック
+  signal tx_en_d : std_logic := '0'; -- 送信用クロックの立ち上がり検出用
+  
   signal tx_div : std_logic_vector(15 downto 0); -- クロック分周の倍率
 
   signal status : unsigned(1 downto 0); -- 状態遷移用レジスタ
@@ -54,55 +56,63 @@ begin
   -- readyへの代入, 常時値を更新している
   ready  <= '1' when (wr = '0' and run = '0' and load = '0') else '0';
 
-  process(clk, reset)                    --変化を監視する信号を記述する, この場合クロックとリセットを監視
+  process(clk) --変化を監視する信号を記述する, この場合クロック
   begin
-    if(reset = '1') then                 --リセット時の動作, 初期値の設定
-      load <= '0';
-    elsif(clk'event and clk = '1') then  --クロックの立ち上がり時の動作
-      if(wr = '1' and run = '0') then    --送信要求があり，かつ送信中でない場合
-        load   <= '1';                   --データを取り込んだことを示すフラグを立てる
-        in_din <= din;                   --一時保存用レジスタに値を格納
-      end if;
-      if(load = '1' and run = '1') then  --送信中で，かつデータを取り込んだ
-                                         --ことを示すフラグが立っている場合
-        load <= '0';                     --データを取り込んだことを示すフラグを下げる
+    if rising_edge(clk) then  --クロックの立ち上がり時の動作
+      if reset = '1' then                 --リセット時の動作, 初期値の設定
+        load <= '0';
+      else
+        if(wr = '1' and run = '0') then    --送信要求があり，かつ送信中でない場合
+          load   <= '1';                   --データを取り込んだことを示すフラグを立てる
+          in_din <= din;                   --一時保存用レジスタに値を格納
+        end if;
+        if(load = '1' and run = '1') then  --送信中で，かつデータを取り込んだ
+                                           --ことを示すフラグが立っている場合
+          load <= '0';                     --データを取り込んだことを示すフラグを下げる
+        end if;
       end if;
     end if;
   end process;
 
-  process(tx_en, reset)                 --変化を監視する信号を記述する, この場合送信用クロックとリセットを監視
+  process(clk)                            --変化を監視する信号を記述する, この場合送信用クロック
   begin
-    if reset = '1' then                 --リセット時の動作, 初期値の設定
-      dout   <= '1';
-      cbit   <= (others => '0');
-      status <= (others => '0');
-      run    <= '0';
-    elsif (tx_en'event and tx_en = '1') then  --送信用クロックの立ち上がり時の動作
-      case to_integer(status) is      --statusの値に応じて動作が異なる
-        when 0 =>                       --初期状態
-          cbit <= (others => '0');      --カウンタをクリア
-          if load = '1' then            -- データを取り込んでいる場合
-            dout   <= '0';              -- スタートビット0を出力
-            status <= status + 1;       -- 次の状態へ
-            buf    <= in_din;           -- 送信データを一時バッファに退避
-            run    <= '1';              -- 送信中の状態へ遷移
-          else                          --なにもしない状態へ遷移
-            dout <= '1';
-            run  <= '0';                --送信要求受付可能状態へ
-          end if;
-        when 1 =>                       --データをLSBから順番に送信
-          cbit <= cbit + 1;             -- カウンタをインクリメント
-          dout <= buf(to_integer(cbit));    --一時バッファからcbit目を抽出し出力する
-          if(to_integer(cbit) = 7) then     -- データの8ビット目を送信したら,
+    if rising_edge(clk) then
+      if reset = '1' then                 --リセット時の動作, 初期値の設定
+        dout    <= '1';
+        cbit    <= (others => '0');
+        status  <= (others => '0');
+        run     <= '0';
+        tx_en_d <= '0';
+      else
+        tx_en_d <= tx_en;
+        if tx_en = '1' and tx_en_d = '0' then -- tx_enの立ち上がりで動作
+          case to_integer(status) is        --statusの値に応じて動作が異なる
+            when 0          =>              --初期状態
+              cbit <= (others => '0');        --カウンタをクリア
+              if load = '1' then              -- データを取り込んでいる場合
+                dout   <= '0';                -- スタートビット0を出力
+                status <= status + 1;         -- 次の状態へ
+                buf    <= in_din;             -- 送信データを一時バッファに退避
+                run    <= '1';                -- 送信中の状態へ遷移
+              else                            --なにもしない状態へ遷移
+                dout <= '1';
+                run  <= '0';                  --送信要求受付可能状態へ
+              end if;
+            when 1 =>                         --データをLSBから順番に送信
+              cbit <= cbit + 1;               -- カウンタをインクリメント
+              dout <= buf(to_integer(cbit));  --一時バッファからcbit目を抽出し出力する
+              if(to_integer(cbit) = 7) then   -- データの8ビット目を送信したら,
                                               -- ストップビットを送る状態へ遷移
-            status <= status + 1;
-          end if;
-        when 2 =>                       -- ストップビットを送信
-          dout   <= '1';                --ストップビット1
-          status <= (others => '0');    --初期状態へ
-        when others =>                  --その他の状態の場合
-          status <= (others => '0');    -- 初期状態へ遷移
-      end case;
+                status <= status + 1;
+              end if;
+            when 2 =>                         -- ストップビットを送信
+              dout   <= '1';                  --ストップビット1
+              status <= (others => '0');      --初期状態へ
+            when others =>                    --その他の状態の場合
+              status <= (others => '0');      -- 初期状態へ遷移
+          end case;
+        end if;
+      end if;
     end if;
   end process;
 
