@@ -103,7 +103,7 @@ begin
       
   U_TX : uart_tx
     generic map(
-      sys_clk => 125000000,
+      sys_clk => 100000000,
       rate    => 115200
       )
     port map(
@@ -117,7 +117,7 @@ begin
 
   U_RX: uart_rx
     generic map(
-      sys_clk => 125000000,
+      sys_clk => 100000000,
       rate    => 115200
       )
     port map(
