@@ -9,8 +9,8 @@ entity arty is
     
     LD : out std_logic_vector(1 downto 0);
     
-    UART_TX : out std_logic,
-    UART_RX : in std_logic
+    UART_OUT : out std_logic;
+    UART_IN  : in std_logic
     );
 end entity arty;
 
@@ -72,8 +72,8 @@ begin
   LD(0) <= uart_rx_valid;
   LD(1) <= uart_tx_ready;
 
-  UART_TX <= uart_tx_out;
-  uart_rx_in <= UART_RX;
+  UART_OUT <= uart_tx_out;
+  uart_rx_in <= UART_IN;
 
   process(CLK)
   begin
