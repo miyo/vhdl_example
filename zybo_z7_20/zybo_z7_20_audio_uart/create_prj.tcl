@@ -1,14 +1,18 @@
-set project_dir    "./zybo_z7_20_audio_uart"
+set project_dir    "./prj"
 set project_name   "zybo_z7_20_audio_uart"
 set project_target "xc7z020clg400-1"
 set source_files { \
                    ../../drivers/i2c_ctrl/i2c_ctrl.vhd \
                    ../../drivers/i2s/i2s_decoder.vhd \
                    ../../drivers/i2s/i2s_encoder.vhd \
+                   ../../drivers/uart/uart_tx.vhd \
+                   ../../drivers/uart/uart_rx.vhd \
+                   ../../drivers/uart/clk_div.vhd \
                    ../zybo_z7_20_audio/config_ssm2603.vhd \
                    ../zybo_z7_20_audio/if_ssm2603.vhd \
+                   ./zybo_z7_20_audio_uart.vhd \
                  }
-set constraint_files {./zybo_z7_20_audio_test.xdc}
+set constraint_files {./zybo_z7_20_audio_uart.xdc}
 
 create_project -force $project_name $project_dir -part $project_target
 add_files -norecurse $source_files
