@@ -20,7 +20,9 @@ entity z7_audio_test is
     MCLK : out std_logic; -- master clock
 
     BTN : in std_logic_vector(3 downto 0);
-    SW : in std_logic_vector(3 downto 0)
+    SW : in std_logic_vector(3 downto 0);
+    LD : out std_logic_vector(1 downto 0);
+    JB : inout std_logic_vector(7 downto 0)
     
     );
 end entity z7_audio_test;
@@ -96,6 +98,35 @@ architecture RTL of z7_audio_test is
       );
   end component div_gen_0;
   
+  component uart_tx
+    generic (
+      sys_clk : integer := 14000000;
+      rate    : integer := 9600
+      );
+    port (
+      clk   : in  std_logic;
+      reset : in  std_logic;
+      wr    : in  std_logic;
+      din   : in  std_logic_vector(7 downto 0);
+      dout  : out std_logic;
+      ready : out std_logic
+      );  
+  end component uart_tx;
+
+  component uart_rx
+    generic(
+      sys_clk : integer := 14000000;
+      rate    : integer := 9600
+      );
+    port(
+      clk   : in  std_logic;
+      reset : in  std_logic;
+      din   : in  std_logic;
+      rd    : out std_logic;
+      dout  : out std_logic_vector(7 downto 0)
+      );
+  end component uart_rx;
+
   component ila_0 
     port (
 	  clk : in std_logic;
@@ -138,20 +169,45 @@ architecture RTL of z7_audio_test is
 
   signal lrc : std_logic := '0';
 
-  attribute mark_debug of left_data_i   : signal is "true";
-  attribute mark_debug of left_valid_i  : signal is "true";
-  attribute mark_debug of right_data_i  : signal is "true";
-  attribute mark_debug of right_valid_i : signal is "true";
-
   signal divisor_val : signed(23 downto 0) := to_signed(1, 24);
 
   signal btn_d0 : std_logic_vector(3 downto 0) := (others => '0');
   signal btn_d1 : std_logic_vector(3 downto 0) := (others => '0');
 
+  attribute mark_debug of left_data_i   : signal is "true";
+  attribute mark_debug of left_valid_i  : signal is "true";
+  attribute mark_debug of right_data_i  : signal is "true";
+  attribute mark_debug of right_valid_i : signal is "true";
+  attribute mark_debug of left_data_o   : signal is "true";
+  attribute mark_debug of left_valid_o  : signal is "true";
+  attribute mark_debug of right_data_o  : signal is "true";
+  attribute mark_debug of right_valid_o : signal is "true";
+  attribute mark_debug of divisor_val   : signal is "true";
+  
+  signal tx_btn, tx_btn_d : std_logic := '0';
+  signal tx_kick : std_logic := '0';
+  signal tx_din  : std_logic_vector(7 downto 0);
+
+  signal uart_tx_out     : std_logic;
+  signal uart_rx_in      : std_logic;
+  signal uart_tx_ready   : std_logic;
+  signal uart_rx_valid   : std_logic;
+  signal uart_rx_valid_d : std_logic;
+  signal uart_rx_dout    : std_logic_vector(7 downto 0);
+  
+  attribute mark_debug of uart_rx_dout  : signal is "true";
+  attribute mark_debug of uart_rx_valid : signal is "true";
+
 begin
 
   MUTE <= '1';
   
+  LD(0) <= uart_rx_valid;
+  LD(1) <= uart_tx_ready;
+
+  JB(0) <= uart_tx_out;
+  uart_rx_in <= JB(4);
+
   U_CLK: clk_wiz_0
     port map(
       clk_out1 => clk125mhz,
@@ -281,5 +337,50 @@ begin
 	probe3 => left_data_o & left_valid_o,   -- input wire [24:0]  probe3
 	probe4 => std_logic_vector(divisor_val)
     );
+
+  process(clk125mhz)
+  begin
+    if rising_edge(clk125mhz) then
+      tx_btn          <= btn_d1(2);
+      tx_btn_d        <= tx_btn;
+      uart_rx_valid_d <= uart_rx_valid;
+      if tx_btn = '1' and tx_btn_d = '0' and uart_tx_ready = '1' then
+        tx_kick <= '1';
+        tx_din  <= X"3E";
+      elsif uart_rx_valid = '1' and uart_rx_valid_d = '0' and uart_tx_ready = '1' then
+        tx_kick <= '1';
+        tx_din  <= uart_rx_dout;
+      else
+        tx_kick <= '0';
+      end if;
+    end if;
+  end process;
+
+  U_TX : uart_tx
+    generic map(
+      sys_clk => 125000000,
+      rate    => 115200
+      )
+    port map(
+      clk   => clk125mhz,
+      reset => btn_d1(3),
+      wr    => tx_kick,
+      din   => tx_din,
+      dout  => uart_tx_out,
+      ready => uart_tx_ready
+      );  
+
+  U_RX: uart_rx
+    generic map(
+      sys_clk => 125000000,
+      rate    => 115200
+      )
+    port map(
+      clk   => clk125mhz,
+      reset => btn_d1(3),
+      din   => uart_rx_in,
+      rd    => uart_rx_valid,
+      dout  => uart_rx_dout
+      );
 
 end RTL;
