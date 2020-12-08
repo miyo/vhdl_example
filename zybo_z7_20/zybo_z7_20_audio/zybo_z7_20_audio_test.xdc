@@ -4,6 +4,12 @@ create_clock -period 8.000 -name sys_clk_pin -waveform {0.000 4.000} -add [get_p
 
 create_clock -period 8.000 -name main_clk -waveform {0.000 4.000} -add [get_pins U_CLK/clk_out1]
 create_clock -period 81.300 -name ssm_mclk -waveform {0.000 40.600} -add [get_pins U_CLK/clk_out2]
+create_clock -period 320 -name clk3072khz -waveform {0.000 160} -add [get_nets U/clk3072khz]
+
+set_false_path -from [get_clocks main_clk] -to [get_clocks clk3072khz]
+set_false_path -from [get_clocks clk3072khz] -to [get_clocks main_clk]
+set_false_path -from [get_clocks ssm_mclk] -to [get_clocks clk3072khz]
+set_false_path -from [get_clocks clk3072khz] -to [get_clocks ssm_mclk]
 
 set_property -dict {PACKAGE_PIN K18 IOSTANDARD LVCMOS33} [get_ports {BTN[0]}]
 set_property -dict {PACKAGE_PIN P16 IOSTANDARD LVCMOS33} [get_ports {BTN[1]}]
