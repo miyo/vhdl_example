@@ -148,8 +148,11 @@ architecture RTL of z7_audio_test is
   signal btn_d0 : std_logic_vector(3 downto 0) := (others => '0');
   signal btn_d1 : std_logic_vector(3 downto 0) := (others => '0');
 
+  signal bclk_i : std_logic;
+
 begin
 
+  BCLK <= bclk_i;
   MUTE <= '1';
   
   U_CLK: clk_wiz_0
@@ -169,7 +172,7 @@ begin
       
       KICK => clk_locked,
 
-      BCLK   => BCLK,
+      BCLK   => bclk_i,
       PBDAT  => enc_dout,
       PBLRC  => PBLRC,
       RECDAT => RECDAT,
@@ -194,7 +197,7 @@ begin
   -- L-ch: SSM2603(12.288MHz) -> 125MHz
   LCH_IFIFO : fifo_generator_0
     PORT map(
-      wr_clk => clk12288khz, din => left_din, wr_en => left_din_valid,
+      wr_clk => bclk_i, din => left_din, wr_en => left_din_valid,
       rd_clk => clk125mhz, rd_en => '1', dout => left_data_i, valid => left_valid_i,
       full   => open, empty => open
       );
@@ -203,14 +206,14 @@ begin
   LCH_OFIFO : fifo_generator_0
     PORT map(
       wr_clk => clk125mhz, din => left_data_o, wr_en => left_valid_o,
-      rd_clk => clk12288khz, rd_en => '1', dout => left_dout, valid => left_dout_valid,
+      rd_clk => bclk_i, rd_en => '1', dout => left_dout, valid => left_dout_valid,
       full   => open, empty => open
       );
 
   -- R-ch: SSM2603(12.288MHz) -> 125MHz
   RCH_IFIFO : fifo_generator_0
     PORT map(
-      wr_clk => clk12288khz, din => right_din, wr_en => right_din_valid,
+      wr_clk => bclk_i, din => right_din, wr_en => right_din_valid,
       rd_clk => clk125mhz, rd_en => '1', dout => right_data_i, valid => right_valid_i,
       full   => open, empty => open
       );
@@ -219,7 +222,7 @@ begin
   RCH_OFIFO : fifo_generator_0
     PORT map(
       wr_clk => clk125mhz, din => right_data_o, wr_en => right_valid_o,
-      rd_clk => clk12288khz, rd_en => '1', dout => right_dout, valid => right_dout_valid,
+      rd_clk => bclk_i, rd_en => '1', dout => right_dout, valid => right_dout_valid,
       full   => open, empty => open
       );
 

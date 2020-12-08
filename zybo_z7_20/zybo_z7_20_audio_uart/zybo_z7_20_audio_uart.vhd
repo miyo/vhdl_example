@@ -3,7 +3,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity z7_audio_test is
+entity z7_audio_uart is
   port (
     CLK : in std_logic;
     
@@ -25,9 +25,9 @@ entity z7_audio_test is
     JB : inout std_logic_vector(7 downto 0)
     
     );
-end entity z7_audio_test;
+end entity z7_audio_uart;
 
-architecture RTL of z7_audio_test is
+architecture RTL of z7_audio_uart is
 
   attribute mark_debug : string;
 
@@ -74,6 +74,20 @@ architecture RTL of z7_audio_test is
     PORT (
       wr_clk : IN STD_LOGIC;
       rd_clk : IN STD_LOGIC;
+      din : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+      wr_en : IN STD_LOGIC;
+      rd_en : IN STD_LOGIC;
+      dout : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
+      full : OUT STD_LOGIC;
+      empty : OUT STD_LOGIC;
+      valid : OUT STD_LOGIC
+      );
+  END component fifo_generator_0;
+  
+  component fifo_generator_1
+    PORT (
+      wr_clk : IN STD_LOGIC;
+      rd_clk : IN STD_LOGIC;
       din : IN STD_LOGIC_VECTOR(23 DOWNTO 0);
       wr_en : IN STD_LOGIC;
       rd_en : IN STD_LOGIC;
@@ -82,7 +96,7 @@ architecture RTL of z7_audio_test is
       empty : OUT STD_LOGIC;
       valid : OUT STD_LOGIC
       );
-  END component fifo_generator_0;
+  END component fifo_generator_1;
 
   component div_gen_0
     port (
@@ -127,16 +141,34 @@ architecture RTL of z7_audio_test is
       );
   end component uart_rx;
 
-  component ila_0 
+  component ila_0
     port (
-	  clk : in std_logic;
-	  probe0 : std_logic_vector(24 downto 0);
-	  probe1 : std_logic_vector(24 downto 0);
-	  probe2 : std_logic_vector(24 downto 0);
-	  probe3 : std_logic_vector(24 downto 0);
-	  probe4 : std_logic_vector(23 downto 0)
+      clk : in std_logic;
+      probe0 : std_logic_vector(24 downto 0);
+      probe1 : std_logic_vector(24 downto 0);
+      probe2 : std_logic_vector(24 downto 0);
+      probe3 : std_logic_vector(24 downto 0);
+      probe4 : std_logic_vector(23 downto 0);
+      probe5 : std_logic_vector(15 downto 0)
     );
   end component ila_0;
+  
+  component ila_1
+    port (
+      clk : in std_logic;
+      probe0 : std_logic_vector(24 downto 0);
+      probe1 : std_logic_vector(24 downto 0);
+      probe2 : std_logic_vector(15 downto 0)
+    );
+  end component ila_1;
+
+  component ila_2
+    port (
+      clk : in std_logic;
+      probe0 : std_logic_vector(9 downto 0);
+      probe1 : std_logic_vector(8 downto 0)
+    );  
+  end component ila_2;
 
   signal clk125mhz   : std_logic;
   signal clk12288khz : std_logic;
@@ -174,6 +206,11 @@ architecture RTL of z7_audio_test is
   signal btn_d0 : std_logic_vector(3 downto 0) := (others => '0');
   signal btn_d1 : std_logic_vector(3 downto 0) := (others => '0');
 
+  attribute mark_debug of left_din        : signal is "true";
+  attribute mark_debug of left_din_valid  : signal is "true";
+  attribute mark_debug of right_din       : signal is "true";
+  attribute mark_debug of right_din_valid : signal is "true";
+  
   attribute mark_debug of left_data_i   : signal is "true";
   attribute mark_debug of left_valid_i  : signal is "true";
   attribute mark_debug of right_data_i  : signal is "true";
@@ -197,10 +234,26 @@ architecture RTL of z7_audio_test is
   
   attribute mark_debug of uart_rx_dout  : signal is "true";
   attribute mark_debug of uart_rx_valid : signal is "true";
+  attribute mark_debug of uart_tx_ready : signal is "true";
+  attribute mark_debug of tx_din  : signal is "true";
+  attribute mark_debug of tx_kick : signal is "true";
+
+  signal left_tick_count    : unsigned(7 downto 0) := (others => '0');
+  signal left_tick_count_i  : std_logic_vector(7 downto 0);
+  signal right_tick_count   : unsigned(7 downto 0) := (others => '0');
+  signal right_tick_count_i : std_logic_vector(7 downto 0);
+
+  attribute mark_debug of left_tick_count    : signal is "true";
+  attribute mark_debug of left_tick_count_i  : signal is "true";
+  attribute mark_debug of right_tick_count   : signal is "true";
+  attribute mark_debug of right_tick_count_i : signal is "true";
+
+  signal bclk_i : std_logic;
 
 begin
 
   MUTE <= '1';
+  BCLK <= bclk_i;
   
   LD(0) <= uart_rx_valid;
   LD(1) <= uart_tx_ready;
@@ -225,7 +278,7 @@ begin
       
       KICK => clk_locked,
 
-      BCLK   => BCLK,
+      BCLK   => bclk_i,
       PBDAT  => enc_dout,
       PBLRC  => PBLRC,
       RECDAT => RECDAT,
@@ -247,43 +300,58 @@ begin
       RIN_VALID => right_dout_valid
       );
 
-  -- L-ch: SSM2603(12.288MHz) -> 125MHz
+  process(bclk_i)
+  begin
+    if rising_edge(bclk_i) then
+      if left_din_valid = '1' then
+        left_tick_count  <= left_tick_count + 1;
+      end if;
+      if right_din_valid = '1' then
+        right_tick_count <= right_tick_count + 1;
+      end if;
+    end if;
+  end process;
+                         
+
   LCH_IFIFO : fifo_generator_0
     PORT map(
-      wr_clk => clk12288khz, din => left_din, wr_en => left_din_valid,
-      rd_clk => clk125mhz, rd_en => '1', dout => left_data_i, valid => left_valid_i,
+      wr_clk => bclk_i,
+      din => std_logic_vector(left_tick_count) & left_din,
+      wr_en => left_din_valid,
+      rd_clk => clk125mhz,
+      rd_en => '1',
+      dout(31 downto 24) => left_tick_count_i,
+      dout(23 downto 0) => left_data_i,
+      valid => left_valid_i,
       full   => open, empty => open
       );
 
-  -- L-ch: 125MHz -> SSM2603(12.288MHz)
-  LCH_OFIFO : fifo_generator_0
-    PORT map(
-      wr_clk => clk125mhz, din => left_data_o, wr_en => left_valid_o,
-      rd_clk => clk12288khz, rd_en => '1', dout => left_dout, valid => left_dout_valid,
-      full   => open, empty => open
-      );
-
-  -- R-ch: SSM2603(12.288MHz) -> 125MHz
   RCH_IFIFO : fifo_generator_0
     PORT map(
-      wr_clk => clk12288khz, din => right_din, wr_en => right_din_valid,
-      rd_clk => clk125mhz, rd_en => '1', dout => right_data_i, valid => right_valid_i,
+      wr_clk => bclk_i,
+      din => std_logic_vector(right_tick_count) & right_din,
+      wr_en => right_din_valid,
+      rd_clk => clk125mhz,
+      rd_en => '1',
+      dout(31 downto 24) => right_tick_count_i,
+      dout(23 downto 0) => right_data_i,
+      valid => right_valid_i,
       full   => open, empty => open
       );
 
-  -- R-ch: 125MHz -> SSM2603(12.288MHz)
-  RCH_OFIFO : fifo_generator_0
+  LCH_OFIFO : fifo_generator_1
+    PORT map(
+      wr_clk => clk125mhz, din => left_data_o, wr_en => left_valid_o,
+      rd_clk => bclk_i, rd_en => '1', dout => left_dout, valid => left_dout_valid,
+      full   => open, empty => open
+      );
+
+  RCH_OFIFO : fifo_generator_1
     PORT map(
       wr_clk => clk125mhz, din => right_data_o, wr_en => right_valid_o,
-      rd_clk => clk12288khz, rd_en => '1', dout => right_dout, valid => right_dout_valid,
+      rd_clk => bclk_i, rd_en => '1', dout => right_dout, valid => right_dout_valid,
       full   => open, empty => open
       );
-
---  left_data_o  <= left_data_i;
---  left_valid_o <= left_valid_i;
-  
---  right_data_o  <= right_data_i;
---  right_valid_o <= right_valid_i;
 
   process(clk125mhz)
   begin
@@ -335,8 +403,17 @@ begin
 	probe1 => left_data_i & left_valid_i,   -- input wire [24:0]  probe1 
 	probe2 => right_data_o & right_valid_o, -- input wire [24:0]  probe2 
 	probe3 => left_data_o & left_valid_o,   -- input wire [24:0]  probe3
-	probe4 => std_logic_vector(divisor_val)
-    );
+	probe4 => std_logic_vector(divisor_val),
+        probe5 => left_tick_count_i & right_tick_count_i
+        );
+  
+ ila_1_i : ila_1
+   port map(
+	clk => bclk_i, -- input wire clk
+	probe0 => right_din & right_din_valid, -- input wire [24:0]  probe0  
+	probe1 => left_din & left_din_valid,   -- input wire [24:0]  probe1 
+        probe2 => std_logic_vector(left_tick_count) & std_logic_vector(right_tick_count)
+        );
 
   process(clk125mhz)
   begin
@@ -382,5 +459,12 @@ begin
       rd    => uart_rx_valid,
       dout  => uart_rx_dout
       );
+
+ ila_2_i : ila_2
+   port map(
+	clk => clk125mhz,
+	probe0 => uart_tx_ready & tx_din & tx_kick,
+	probe1 => uart_rx_valid & uart_rx_dout
+        );
 
 end RTL;

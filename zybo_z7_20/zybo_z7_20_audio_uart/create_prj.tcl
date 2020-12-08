@@ -19,16 +19,24 @@ add_files -norecurse $source_files
 add_files -fileset constrs_1 -norecurse $constraint_files
 
 import_ip -files ../zybo_z7_20_audio/ip/clk_wiz_0.xci
-import_ip -files ../zybo_z7_20_audio/ip/fifo_generator_0.xci
 import_ip -files ../zybo_z7_20_audio/ip/div_gen_0.xci
-import_ip -files ../zybo_z7_20_audio/ip/ila_0.xci
+import_ip -files ./ip/fifo_generator_0.xci
+import_ip -files ./ip/fifo_generator_1.xci
+import_ip -files ./ip/ila_0.xci
+import_ip -files ./ip/ila_1.xci
+import_ip -files ./ip/ila_2.xci
+
+set_property top z7_audio_uart [current_fileset]
 
 update_compile_order -fileset sources_1
 
-upgrade_ip [get_ips fifo_generator_0]
 upgrade_ip [get_ips div_gen_0]
 upgrade_ip [get_ips clk_wiz_0]
+upgrade_ip [get_ips fifo_generator_0]
+upgrade_ip [get_ips fifo_generator_1]
 upgrade_ip [get_ips ila_0]
+upgrade_ip [get_ips ila_1]
+upgrade_ip [get_ips ila_2]
 
 reset_project
 
